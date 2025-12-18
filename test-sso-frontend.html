@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO Frontend Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .code {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 SSO Frontend Integration Test</h1>
+        
+        <div class="test-section info">
+            <h3>📋 Test Instructions</h3>
+            <p>This page simulates the SSO token scenario. Click the buttons below to test different SSO scenarios:</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔑 Test SSO Token (Valid)</h3>
+            <p>This will simulate a valid SSO token from your SSO portal:</p>
+            <button onclick="testValidSSOToken()">Test Valid SSO Token</button>
+            <div id="valid-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>❌ Test SSO Token (Invalid)</h3>
+            <p>This will simulate an invalid SSO token:</p>
+            <button onclick="testInvalidSSOToken()">Test Invalid SSO Token</button>
+            <div id="invalid-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>⏰ Test SSO Token (Expired)</h3>
+            <p>This will simulate an expired SSO token:</p>
+            <button onclick="testExpiredSSOToken()">Test Expired SSO Token</button>
+            <div id="expired-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 Direct Frontend Test</h3>
+            <p>Open the frontend with SSO token directly:</p>
+            <button onclick="openFrontendWithSSO()">Open Frontend with SSO Token</button>
+            <div id="frontend-result"></div>
+        </div>
+
+        <div class="test-section info">
+            <h3>📝 Expected Results</h3>
+            <ul>
+                <li><strong>Valid Token:</strong> Should authenticate and redirect to dashboard</li>
+                <li><strong>Invalid Token:</strong> Should show error message</li>
+                <li><strong>Expired Token:</strong> Should show error message</li>
+                <li><strong>Frontend Test:</strong> Should open frontend with SSO token in URL</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Generate a test SSO token
+        function generateTestToken(payload, secret = 'sso-secret-key-change-in-production') {
+            // This is a simplified JWT generation for testing
+            const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+            const payloadEncoded = btoa(JSON.stringify(payload));
+            const signature = btoa('test-signature'); // Simplified for demo
+            
+            return `${header}.${payloadEncoded}.${signature}`;
+        }
+
+        function testValidSSOToken() {
+            const validPayload = {
+                sub: '68d4dcddf2cfa6f9745f4cc94',
+                email: 'kotestwara@bylinelearning.com',
+                name: 'Koteshwar Katakam',
+                role: 'employee',
+                appId: '68fb6986ef0b1364207295d6',
+                appName: 'AMS',
+                source: 'sso-portal',
+                timestamp: Date.now(),
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+                aud: 'sso-apps',
+                iss: 'sso-portal'
+            };
+
+            const token = generateTestToken(validPayload);
+            const url = `http://localhost:5173/login?sso_token=${token}&return_url=http%3A%2F%2Flocalhost%3A5173%2Flogin&timestamp=${Date.now()}`;
+            
+            document.getElementById('valid-result').innerHTML = `
+                <div class="success">
+                    <p><strong>✅ Valid SSO Token Generated</strong></p>
+                    <p><strong>URL:</strong> <a href="${url}" target="_blank">${url}</a></p>
+                    <p><strong>Token:</strong> <span class="code">${token}</span></p>
+                </div>
+            `;
+        }
+
+        function testInvalidSSOToken() {
+            const invalidToken = 'invalid-token-123';
+            const url = `http://localhost:5173/login?sso_token=${invalidToken}`;
+            
+            document.getElementById('invalid-result').innerHTML = `
+                <div class="error">
+                    <p><strong>❌ Invalid SSO Token</strong></p>
+                    <p><strong>URL:</strong> <a href="${url}" target="_blank">${url}</a></p>
+                    <p><strong>Token:</strong> <span class="code">${invalidToken}</span></p>
+                    <p><em>Expected: Should show error message in frontend</em></p>
+                </div>
+            `;
+        }
+
+        function testExpiredSSOToken() {
+            const expiredPayload = {
+                sub: '68d4dcddf2cfa6f9745f4cc94',
+                email: 'kotestwara@bylinelearning.com',
+                name: 'Koteshwar Katakam',
+                role: 'employee',
+                iat: Math.floor(Date.now() / 1000) - 7200, // 2 hours ago
+                exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour ago (expired)
+                aud: 'sso-apps',
+                iss: 'sso-portal'
+            };
+
+            const token = generateTestToken(expiredPayload);
+            const url = `http://localhost:5173/login?sso_token=${token}`;
+            
+            document.getElementById('expired-result').innerHTML = `
+                <div class="error">
+                    <p><strong>⏰ Expired SSO Token</strong></p>
+                    <p><strong>URL:</strong> <a href="${url}" target="_blank">${url}</a></p>
+                    <p><strong>Token:</strong> <span class="code">${token}</span></p>
+                    <p><em>Expected: Should show error message in frontend</em></p>
+                </div>
+            `;
+        }
+
+        function openFrontendWithSSO() {
+            const payload = {
+                sub: '68d4dcddf2cfa6f9745f4cc94',
+                email: 'kotestwara@bylinelearning.com',
+                name: 'Koteshwar Katakam',
+                role: 'employee',
+                appId: '68fb6986ef0b1364207295d6',
+                appName: 'AMS',
+                source: 'sso-portal',
+                timestamp: Date.now(),
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600,
+                aud: 'sso-apps',
+                iss: 'sso-portal'
+            };
+
+            const token = generateTestToken(payload);
+            const url = `http://localhost:5173/login?sso_token=${token}&return_url=http%3A%2F%2Flocalhost%3A5173%2Flogin&timestamp=${Date.now()}`;
+            
+            document.getElementById('frontend-result').innerHTML = `
+                <div class="info">
+                    <p><strong>🔗 Frontend SSO Test</strong></p>
+                    <p><strong>URL:</strong> <a href="${url}" target="_blank">Open Frontend with SSO Token</a></p>
+                    <p><em>Expected: Should authenticate and redirect to dashboard</em></p>
+                </div>
+            `;
+        }
+
+        // Auto-generate a test token on page load
+        window.onload = function() {
+            testValidSSOToken();
+        };
+    </script>
+</body>
+</html>
+
+

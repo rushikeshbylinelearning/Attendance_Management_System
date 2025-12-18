@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO Endpoint Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .code {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 SSO Endpoint Test</h1>
+        
+        <div class="test-section info">
+            <h3>📋 Test Instructions</h3>
+            <p>This page tests the SSO validation endpoint directly. Click the buttons below to test different scenarios:</p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔑 Test Valid SSO Token</h3>
+            <p>Test with a valid SSO token:</p>
+            <button onclick="testValidToken()">Test Valid Token</button>
+            <div id="valid-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>❌ Test Invalid SSO Token</h3>
+            <p>Test with an invalid SSO token:</p>
+            <button onclick="testInvalidToken()">Test Invalid Token</button>
+            <div id="invalid-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 Test Frontend Integration</h3>
+            <p>Test the complete frontend SSO flow:</p>
+            <button onclick="testFrontendIntegration()">Test Frontend SSO</button>
+            <div id="frontend-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Generate a valid test token
+        function generateValidToken() {
+            const payload = {
+                sub: '68d4dcddf2cfa6f9745f4cc94',
+                email: 'kotestwara@bylinelearning.com',
+                name: 'Koteshwar Katakam',
+                role: 'employee',
+                appId: '68fb6986ef0b1364207295d6',
+                appName: 'AMS',
+                source: 'sso-portal',
+                timestamp: Date.now(),
+                iat: Math.floor(Date.now() / 1000),
+                exp: Math.floor(Date.now() / 1000) + 3600,
+                aud: 'sso-apps',
+                iss: 'sso-portal'
+            };
+
+            // Simple JWT encoding for testing (not secure, just for demo)
+            const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+            const payloadEncoded = btoa(JSON.stringify(payload));
+            const signature = btoa('test-signature');
+            
+            return `${header}.${payloadEncoded}.${signature}`;
+        }
+
+        async function testValidToken() {
+            const token = generateValidToken();
+            const resultDiv = document.getElementById('valid-result');
+            
+            resultDiv.innerHTML = '<div class="info">Testing valid token...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/validate-sso', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sso_token: token })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>✅ Valid Token Test Passed</strong></p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Response:</strong></p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p><strong>❌ Valid Token Test Failed</strong></p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong></p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ Network Error</strong></p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testInvalidToken() {
+            const resultDiv = document.getElementById('invalid-result');
+            
+            resultDiv.innerHTML = '<div class="info">Testing invalid token...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3001/api/auth/validate-sso', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sso_token: 'invalid-token-123' })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p><strong>❌ Invalid Token Test Failed (Should have failed)</strong></p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Response:</strong></p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>✅ Invalid Token Test Passed (Correctly rejected)</strong></p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong></p>
+                            <div class="code">${JSON.stringify(data, null, 2)}</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ Network Error</strong></p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function testFrontendIntegration() {
+            const token = generateValidToken();
+            const url = `http://localhost:5173/login?sso_token=${token}&return_url=http%3A%2F%2Flocalhost%3A5173%2Flogin&timestamp=${Date.now()}`;
+            
+            document.getElementById('frontend-result').innerHTML = `
+                <div class="info">
+                    <p><strong>🔗 Frontend SSO Test</strong></p>
+                    <p><strong>URL:</strong> <a href="${url}" target="_blank">Open Frontend with SSO Token</a></p>
+                    <p><strong>Token:</strong></p>
+                    <div class="code">${token}</div>
+                    <p><em>Expected: Should authenticate and redirect to dashboard</em></p>
+                </div>
+            `;
+        }
+
+        // Auto-run valid token test on page load
+        window.onload = function() {
+            testValidToken();
+        };
+    </script>
+</body>
+</html>
+
+

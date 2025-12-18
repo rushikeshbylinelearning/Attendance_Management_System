@@ -1,0 +1,145 @@
+// backend/middleware/ssoTokenAuth.js
+const User = require('../models/User');
+const SSOVerification = require('../utils/ssoVerification');
+
+/**
+ * SSO Token Authentication Middleware
+ * Handles sso_token query parameter for seamless SSO login
+ * Supports RS256 verification using JWKS, public key, or validate endpoint
+ */
+function ssoTokenAuth(SSO_CONFIG) {
+  const ssoVerification = new SSOVerification(SSO_CONFIG);
+  
+  return async (req, res, next) => {
+    const token = req.query.sso_token;
+    
+    // If no SSO token, continue with normal flow
+    if (!token) {
+      return next();
+    }
+
+    // If SSO is not configured, redirect to SSO portal
+    if (!ssoVerification.isConfigured()) {
+      console.log('[SSOAuth] SSO not configured, redirecting to SSO portal');
+      const redirectUrl = process.env.NODE_ENV === 'production'
+        ? 'https://sso.bylinelms.com/login'
+        : 'http://localhost:3000/login';
+      return res.redirect(redirectUrl);
+    }
+
+    try {
+      console.log('[SSOAuth] Processing SSO token...');
+      
+      // Verify the SSO token using the new verification utility
+      const decoded = await ssoVerification.verifyToken(token);
+      
+      // Extract user claims
+      const userClaims = ssoVerification.extractUserClaims(decoded);
+
+      // Find or create user
+      let user = await User.findOne({ 
+        email: userClaims.email,
+        isActive: true 
+      }).populate('shiftGroup');
+
+      if (!user) {
+        // Check if auto-provisioning is enabled
+        const autoProvision = process.env.SSO_AUTO_PROVISION === 'true';
+        if (!autoProvision) {
+          console.log(`[SSOAuth] User ${userClaims.email} not found and auto-provisioning disabled`);
+          const redirectUrl = process.env.NODE_ENV === 'production'
+            ? 'https://sso.bylinelms.com/login'
+            : 'http://localhost:3000/login';
+          return res.redirect(redirectUrl);
+        }
+
+        // Auto-provision new user
+        console.log(`[SSOAuth] Auto-provisioning new user: ${userClaims.email}`);
+        
+        user = new User({
+          email: userClaims.email,
+          fullName: userClaims.name || userClaims.email.split('@')[0],
+          employeeCode: userClaims.employeeCode || `SSO_${Date.now()}`,
+          role: userClaims.role,
+          department: userClaims.department || 'Unknown',
+          designation: userClaims.designation || 'Employee',
+          domain: userClaims.domain || 'Unknown',
+          passwordHash: 'SSO_USER_NO_PASSWORD',
+          joiningDate: new Date(),
+          isActive: true,
+          authMethod: 'SSO',
+          featurePermissions: {
+            leaves: true,
+            breaks: true,
+            extraFeatures: false,
+            maxBreaks: 999,
+            breakAfterHours: 0,
+            breakWindows: [],
+            canCheckIn: true,
+            canCheckOut: true,
+            canTakeBreak: true,
+            privilegeLevel: 'normal',
+            restrictedFeatures: {},
+            advancedFeatures: {}
+          }
+        });
+
+        await user.save();
+        user = await User.findById(user._id).populate('shiftGroup');
+        console.log(`[SSOAuth] Successfully created new user: ${userClaims.email}`);
+      } else {
+        // Update user data from SSO if needed
+        const needsUpdate = 
+          user.role !== userClaims.role ||
+          (userClaims.department && user.department !== userClaims.department) ||
+          (userClaims.designation && user.designation !== userClaims.designation) ||
+          (userClaims.employeeCode && user.employeeCode !== userClaims.employeeCode);
+
+        if (needsUpdate) {
+          const updateData = {
+            role: userClaims.role,
+            authMethod: 'SSO'
+          };
+
+          if (userClaims.department) updateData.department = userClaims.department;
+          if (userClaims.designation) updateData.designation = userClaims.designation;
+          if (userClaims.employeeCode) updateData.employeeCode = userClaims.employeeCode;
+
+          user = await User.findByIdAndUpdate(
+            user._id,
+            updateData,
+            { new: true }
+          ).populate('shiftGroup');
+
+          console.log(`[SSOAuth] Updated user data for: ${userClaims.email}`);
+        }
+      }
+
+      // Create session
+      req.session.user = {
+        id: user._id,
+        name: user.fullName,
+        email: user.email,
+        role: user.role,
+        authMethod: 'SSO'
+      };
+      req.session.ssoAuthenticated = true;
+
+      console.log(`✅ SSO Login: ${userClaims.email}`);
+
+      // Redirect to intended route
+      const returnUrl = req.query.return_url || '/dashboard';
+      return res.redirect(returnUrl);
+
+    } catch (err) {
+      console.error('❌ Invalid SSO token:', err.message);
+      const redirectUrl = process.env.NODE_ENV === 'production'
+        ? 'https://sso.bylinelms.com/login'
+        : 'http://localhost:3000/login';
+      return res.redirect(redirectUrl);
+    }
+  };
+}
+
+module.exports = ssoTokenAuth;
+

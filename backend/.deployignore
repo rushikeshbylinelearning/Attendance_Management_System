@@ -1,0 +1,61 @@
+# Development files
+node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+
+# Test files
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+
+# Development scripts
+scripts/test-*.js
+scripts/create-test-users.js
+
+# Logs
+logs/*.log
+*.log
+
+# Documentation
+*.md
+!README.md
+
+# Build artifacts
+*.zip
+*.tar.gz
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.backup
+*.bak
+*.(2).*
+
+# Upload test files (keep the directories)
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+
+# Public test reports
+public/reports/*.xlsx
+!public/reports/.gitkeep
+
+

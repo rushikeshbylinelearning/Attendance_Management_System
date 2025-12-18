@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSO Frontend Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .code {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 SSO Frontend Fix Test</h1>
+        
+        <div class="test-section info">
+            <h3>📋 Issue Fixed</h3>
+            <p>The frontend was making requests to the wrong URL. Fixed by:</p>
+            <ul>
+                <li>✅ Using direct backend URL for SSO validation</li>
+                <li>✅ Fixed React prop warning in error display</li>
+                <li>✅ Updated error handling for fetch API</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>🔑 Test SSO Integration</h3>
+            <p>Click the button below to test the complete SSO flow:</p>
+            <button onclick="testSSOIntegration()">Test SSO Integration</button>
+            <div id="test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 Direct Frontend Test</h3>
+            <p>Open the frontend with a valid SSO token:</p>
+            <button onclick="openFrontendWithSSO()">Open Frontend with SSO Token</button>
+            <div id="frontend-result"></div>
+        </div>
+
+        <div class="test-section info">
+            <h3>📝 Expected Results</h3>
+            <ul>
+                <li><strong>Backend Test:</strong> Should return 200 with user data</li>
+                <li><strong>Frontend Test:</strong> Should authenticate and redirect to dashboard</li>
+                <li><strong>No more 401 errors!</strong></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        async function testSSOIntegration() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = '<div class="info">Testing SSO integration...</div>';
+            
+            try {
+                // Test the backend endpoint directly
+                const response = await fetch('http://localhost:3001/api/auth/validate-sso', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        sso_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGQ0ZGNkZGYyY2ZhNmY5NzQ1ZjRjYzk0IiwiZW1haWwiOiJrb3Rlc3R3YXJhQGJ5bGluZWxlYXJuaW5nLmNvbSIsIm5hbWUiOiJLb3Rlc2h3YXIgS2F0YWthbSIsInJvbGUiOiJlbXBsb3llZSIsImFwcElkIjoiNjhmYjY5ODZlZjBiMTM2NDIwNzI5NWQ2IiwiYXBwTmFtZSI6IkFNUyIsInNvdXJjZSI6InNzby1wb3J0YWwiLCJ0aW1lc3RhbXAiOjE3NjEzOTYxOTY3OTcsImlhdCI6MTc2MTM5NjE5NiwiZXhwIjoxNzYxMzk5Nzk2LCJhdWQiOiJzc28tYXBwcyIsImlzcyI6InNzby1wb3J0YWwifQ.WvOqSdkOGkM_wGenp9KL9X66csx4XvprUcXrDrhvp1s'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p><strong>✅ SSO Integration Test Passed</strong></p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Message:</strong> ${data.message}</p>
+                            <p><strong>User:</strong> ${data.user?.email}</p>
+                            <p><strong>Token Generated:</strong> ${data.token ? 'Yes' : 'No'}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p><strong>❌ SSO Integration Test Failed</strong></p>
+                            <p><strong>Status:</strong> ${response.status}</p>
+                            <p><strong>Error:</strong> ${data.error}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p><strong>❌ Network Error</strong></p>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function openFrontendWithSSO() {
+            const url = 'http://localhost:5173/login?sso_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OGQ0ZGNkZGYyY2ZhNmY5NzQ1ZjRjYzk0IiwiZW1haWwiOiJrb3Rlc3R3YXJhQGJ5bGluZWxlYXJuaW5nLmNvbSIsIm5hbWUiOiJLb3Rlc2h3YXIgS2F0YWthbSIsInJvbGUiOiJlbXBsb3llZSIsImFwcElkIjoiNjhmYjY5ODZlZjBiMTM2NDIwNzI5NWQ2IiwiYXBwTmFtZSI6IkFNUyIsInNvdXJjZSI6InNzby1wb3J0YWwiLCJ0aW1lc3RhbXAiOjE3NjEzOTYxOTY3OTcsImlhdCI6MTc2MTM5NjE5NiwiZXhwIjoxNzYxMzk5Nzk2LCJhdWQiOiJzc28tYXBwcyIsImlzcyI6InNzby1wb3J0YWwifQ.WvOqSdkOGkM_wGenp9KL9X66csx4XvprUcXrDrhvp1s';
+            
+            document.getElementById('frontend-result').innerHTML = `
+                <div class="info">
+                    <p><strong>🔗 Frontend SSO Test</strong></p>
+                    <p><strong>URL:</strong> <a href="${url}" target="_blank">Open Frontend with SSO Token</a></p>
+                    <p><em>Expected: Should authenticate and redirect to dashboard</em></p>
+                </div>
+            `;
+        }
+
+        // Auto-run test on page load
+        window.onload = function() {
+            testSSOIntegration();
+        };
+    </script>
+</body>
+</html>
+

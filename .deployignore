@@ -1,0 +1,86 @@
+# Root level deployment ignore file
+
+# Node modules (will be installed on server)
+node_modules/
+
+# Environment files (set on server)
+.env
+.env.*
+*.env
+
+# Logs
+*.log
+logs/
+**/*.log
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+!DEPLOYMENT.md
+
+# Build artifacts and zips
+*.zip
+*.tar.gz
+*.rar
+backend.zip
+backend (2).zip
+dist.zip
+dist (2).zip
+
+# Test files
+test/
+tests/
+__tests__/
+scripts/test-*.js
+scripts/create-test-users.js
+test-*.js
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# Frontend source (we only need dist)
+frontend/src/
+frontend/public/
+frontend/node_modules/
+frontend/.env*
+frontend/vite.config.js
+frontend/eslint.config.js
+frontend/package-lock.json
+
+# Backend uploads (create fresh on server)
+backend/uploads/avatars/*
+!backend/uploads/avatars/.gitkeep
+
+# Public reports
+public/reports/*.xlsx
+backend/public/reports/*.xlsx
+
+# Scripts
+scripts/
+
+# Excel logs
+*.xlsx
+!Attendance Logs - Default All Employees.xlsx
+
+
